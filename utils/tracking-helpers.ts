@@ -13,6 +13,26 @@ export const msToKmh = (ms: number): number => {
 	return ms * 3.6;
 };
 
+/**
+ * Estimated step length in meters per activity type.
+ *
+ * How native health apps (iOS HealthKit / Android Health Connect) estimate distance:
+ * - iOS M-series coprocessor calibrates step length using height + GPS over weeks
+ * - Android Health Connect uses TYPE_STEP_COUNTER + stride length estimation
+ * - Industry average step lengths (peer-reviewed sports science):
+ *   Walking: 0.65–0.75m (avg 0.70m) for average adult
+ *   Running: 0.80–1.10m (avg 0.85m) varies with speed
+ *   These are conservative — they slightly under-count rather than over-count
+ *
+ * We use the conservative lower end to avoid inflating distance.
+ */
+export const STEP_LENGTH_METERS: Record<string, number> = {
+	run: 0.82,
+	walk: 0.67,
+	bike: 0,
+	drive: 0,
+};
+
 export const calculateDistance = (
 	lat1: number,
 	lon1: number,

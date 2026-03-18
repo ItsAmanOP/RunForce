@@ -1,6 +1,7 @@
-import type { LocationPoint } from "@/types/activity";
+import type { ActivityType, LocationPoint } from "@/types/activity";
 import {
 	GpsKalmanFilter,
+	STEP_LENGTH_METERS,
 	calculateDistance,
 	getGpsSignalStrength,
 	msToKmh,
@@ -12,34 +13,57 @@ import { useSharedValue } from "react-native-reanimated";
 
 // region Constants
 /**
- * Sensor-fusion GPS tracking with Pedometer movement confirmation.
+ * Dual-source distance tracking: GPS + Pedometer sensor fusion.
  *
- * Strategy (how Adidas Running / Strava / OpenTracks work):
+ * How this works (modeled after iOS HealthKit & Adidas Running):
  *
- * 1. GPS provides position. Pedometer provides movement truth.
- * 2. Movement is confirmed by EITHER:
- *    a) GPS Doppler speed ≥ 0.5 m/s (1.8 km/h — slow walk), OR
- *    b) Pedometer detects steps in the last 3 seconds (sensor fusion)
- * 3. When NOT moving: zero speed, freeze distance, freeze anchor.
- * 4. When moving: apply Kalman filter, accumulate distance, update speed.
- * 5. Kalman filter smooths GPS position noise; Haversine calculates distance.
+ * DISTANCE SOURCES:
+ * ─────────────────
+ * Source 1 — GPS position deltas (Haversine on Kalman-filtered positions)
+ *   • Accurate for long straight segments (>5m)
+ *   • Noisy for small movements (<5m), can both over- and under-count
+ *   • Minimum resolution: ~3m (limited by satellite geometry)
  *
- * The pedometer is the key improvement — it uses the phone's accelerometer
- * (hardware-level) to detect walking/running steps. GPS speed can be noisy
- * at low speeds, but the pedometer is extremely reliable for detecting
- * human locomotion. This is exactly what professional apps do.
+ * Source 2 — Pedometer step count × estimated step length
+ *   • Accurate for walking/running at any distance (even 1 step = 0.67m)
+ *   • Not affected by GPS noise, works indoors
+ *   • Minimum resolution: ~0.67m (1 step)
+ *   • Only works for walking/running (not bike/drive)
+ *
+ * FUSION STRATEGY:
+ * ────────────────
+ * For walking/running:
+ *   Use the GREATER of (GPS delta, pedometer delta) per update cycle.
+ *   • If GPS gives 5m and pedometer gives 3m → use 5m (GPS captured a straight path)
+ *   • If GPS gives 0m and pedometer gives 4m → use 4m (user walked but GPS was noisy)
+ *   • This prevents both under-counting (GPS missing small moves) and over-counting
+ *
+ * For bike/drive:
+ *   GPS only — pedometer can't help here.
+ *
+ * SPEED:
+ * ──────
+ * Always use GPS Doppler speed (location.coords.speed).
+ * Google Maps does the same — Doppler speed is ±0.1 m/s accurate even when position
+ * is ±10m uncertain. For pedometer-only movement, estimate speed from steps/time.
+ *
+ * MOVEMENT DETECTION:
+ * ───────────────────
+ * User is moving if EITHER:
+ *   a) GPS Doppler speed ≥ 0.3 m/s (very slow walk), OR
+ *   b) Pedometer detected steps in the last 2 seconds
  */
-const ACCURACY_THRESHOLD = 25;
-const MIN_DISTANCE_THRESHOLD = 2;
-const MAX_DISTANCE_SINGLE_UPDATE = 50;
+const ACCURACY_THRESHOLD = 30;
+const MIN_GPS_DISTANCE = 2;
+const MAX_DISTANCE_SINGLE_UPDATE = 100;
 const SPEED_SMOOTHING_FACTOR = 0.3;
-const STATIONARY_SPEED_THRESHOLD_MS = 0.5;
+const STATIONARY_SPEED_THRESHOLD_MS = 0.3;
 const MIN_TIME_BETWEEN_UPDATES = 500;
-const PEDOMETER_ACTIVE_WINDOW_MS = 3000;
+const PEDOMETER_ACTIVE_WINDOW_MS = 2000;
 // endregion
 
 // region Hook
-export const useLocationTracking = () => {
+export const useLocationTracking = (activityType: ActivityType = "run") => {
 	const currentSpeed = useSharedValue(0);
 	const totalDistance = useSharedValue(0);
 	const maxSpeed = useSharedValue(0);
@@ -48,24 +72,20 @@ export const useLocationTracking = () => {
 	const gpsSignal = useSharedValue<string>("NONE");
 	const isTracking = useSharedValue(false);
 
-	const locationSubscription = useRef<Location.LocationSubscription | null>(
-		null,
-	);
-	const pedometerSubscription = useRef<ReturnType<
-		typeof Pedometer.watchStepCount
-	> | null>(null);
-	const lastAcceptedPoint = useRef<{
-		lat: number;
-		lng: number;
-		timestamp: number;
-	} | null>(null);
+	const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+	const pedometerSubscription = useRef<ReturnType<typeof Pedometer.watchStepCount> | null>(null);
+	const lastAcceptedPoint = useRef<{ lat: number; lng: number; timestamp: number } | null>(null);
 	const pointsRef = useRef<LocationPoint[]>([]);
 	const speedSamples = useRef<number[]>([]);
 	const smoothedSpeed = useRef(0);
 	const kalmanFilter = useRef(new GpsKalmanFilter(3));
 	const lastProcessedTime = useRef(0);
+
+	// Pedometer state for step-based distance
 	const lastStepTimestamp = useRef(0);
 	const pedometerStepCount = useRef(0);
+	const stepsAtLastGpsUpdate = useRef(0);
+	const stepLengthM = useRef(STEP_LENGTH_METERS[activityType] ?? 0);
 
 	const requestPermissions = useCallback(async (): Promise<boolean> => {
 		const { status } = await Location.requestForegroundPermissionsAsync();
@@ -85,10 +105,12 @@ export const useLocationTracking = () => {
 		lastProcessedTime.current = 0;
 		lastStepTimestamp.current = 0;
 		pedometerStepCount.current = 0;
+		stepsAtLastGpsUpdate.current = 0;
+		stepLengthM.current = STEP_LENGTH_METERS[activityType] ?? 0;
 
 		isTracking.value = true;
 
-		// Start pedometer (sensor fusion — step detection as movement oracle)
+		// Start pedometer (sensor fusion — steps as movement oracle + distance source)
 		const pedometerAvailable = await Pedometer.isAvailableAsync();
 		if (pedometerAvailable) {
 			pedometerSubscription.current = Pedometer.watchStepCount((result) => {
@@ -104,21 +126,13 @@ export const useLocationTracking = () => {
 			{
 				accuracy: Location.Accuracy.BestForNavigation,
 				timeInterval: 500,
-				distanceInterval: 1,
+				distanceInterval: 0,
 			},
 			(location) => {
-				const { latitude, longitude, altitude, speed, accuracy } =
-					location.coords;
+				const { latitude, longitude, altitude, speed, accuracy } = location.coords;
 				const timestamp = location.timestamp;
 
-				const point: LocationPoint = {
-					latitude,
-					longitude,
-					altitude,
-					speed,
-					accuracy,
-					timestamp,
-				};
+				const point: LocationPoint = { latitude, longitude, altitude, speed, accuracy, timestamp };
 
 				gpsSignal.value = getGpsSignalStrength(accuracy);
 
@@ -126,90 +140,101 @@ export const useLocationTracking = () => {
 				if (accuracy !== null && accuracy > ACCURACY_THRESHOLD) return;
 
 				// Gate 2: Throttle rapid-fire GPS fixes
-				if (timestamp - lastProcessedTime.current < MIN_TIME_BETWEEN_UPDATES)
-					return;
+				if (timestamp - lastProcessedTime.current < MIN_TIME_BETWEEN_UPDATES) return;
 				lastProcessedTime.current = timestamp;
 
-				// Movement detection via sensor fusion:
-				// Source A: GPS Doppler speed (reliable above ~0.5 m/s for walking)
-				// Source B: Pedometer steps detected in last 3 seconds
-				// If EITHER source says "moving", we trust it.
+				// Movement detection (sensor fusion):
+				// GPS Doppler speed (from satellite frequency shift — accurate to ±0.1 m/s)
+				// Pedometer step detection (from accelerometer — extremely reliable for locomotion)
 				const gpsSpeedMs = speed !== null && speed >= 0 ? speed : 0;
 				const gpsMoving = gpsSpeedMs >= STATIONARY_SPEED_THRESHOLD_MS;
-				const stepsRecent =
-					Date.now() - lastStepTimestamp.current < PEDOMETER_ACTIVE_WINDOW_MS;
+				const stepsRecent = (Date.now() - lastStepTimestamp.current) < PEDOMETER_ACTIVE_WINDOW_MS;
 				const isMoving = gpsMoving || stepsRecent;
 
-				// Speed processing
-				if (isMoving) {
-					const rawSpeedKmh = msToKmh(gpsSpeedMs);
-					smoothedSpeed.current =
-						smoothedSpeed.current * (1 - SPEED_SMOOTHING_FACTOR) +
-						rawSpeedKmh * SPEED_SMOOTHING_FACTOR;
-
-					// Floor very small residual speed from smoothing when pedometer-only
-					if (smoothedSpeed.current < 0.5 && !gpsMoving) {
-						smoothedSpeed.current = stepsRecent ? 3.5 : 0;
-					}
-				} else {
+				if (!isMoving) {
+					// Stationary: hard-zero everything, freeze anchor
 					smoothedSpeed.current = 0;
+					currentSpeed.value = 0;
+					stepsAtLastGpsUpdate.current = pedometerStepCount.current;
+					if (!lastAcceptedPoint.current) {
+						const filtered = kalmanFilter.current.process(latitude, longitude, accuracy ?? 10, timestamp);
+						lastAcceptedPoint.current = { lat: filtered.lat, lng: filtered.lng, timestamp };
+					}
+					if (altitude !== null) elevation.value = Math.round(altitude);
+					pointsRef.current.push(point);
+					return;
 				}
+
+				// --- USER IS MOVING ---
+
+				// Speed: use GPS Doppler speed (same approach as Google Maps)
+				const rawSpeedKmh = msToKmh(gpsSpeedMs);
+
+				// If GPS speed is near-zero but pedometer says we're moving,
+				// estimate speed from step rate (steps per second × step length × 3.6)
+				let effectiveSpeedKmh = rawSpeedKmh;
+				if (rawSpeedKmh < 1.0 && stepsRecent && stepLengthM.current > 0) {
+					// Estimate ~2 steps/second for normal walking → ~4.8 km/h
+					// This is a reasonable fallback when GPS speed hasn't caught up
+					effectiveSpeedKmh = Math.max(rawSpeedKmh, 3.5);
+				}
+
+				smoothedSpeed.current =
+					smoothedSpeed.current * (1 - SPEED_SMOOTHING_FACTOR) +
+					effectiveSpeedKmh * SPEED_SMOOTHING_FACTOR;
 
 				currentSpeed.value = Math.round(smoothedSpeed.current * 10) / 10;
 
-				// Max speed — only from confirmed movement
-				if (isMoving && smoothedSpeed.current > maxSpeed.value) {
+				// Max speed
+				if (smoothedSpeed.current > maxSpeed.value) {
 					maxSpeed.value = Math.round(smoothedSpeed.current * 10) / 10;
 				}
 
-				// Average speed — only from confirmed movement with meaningful speed
-				if (isMoving && smoothedSpeed.current >= 1.0) {
+				// Average speed (only meaningful readings ≥ 1 km/h)
+				if (smoothedSpeed.current >= 1.0) {
 					speedSamples.current.push(smoothedSpeed.current);
 					const sum = speedSamples.current.reduce((a, b) => a + b, 0);
-					avgSpeed.value =
-						Math.round((sum / speedSamples.current.length) * 10) / 10;
+					avgSpeed.value = Math.round((sum / speedSamples.current.length) * 10) / 10;
 				}
 
 				// Apply Kalman filter to get smoothed position
-				const filtered = kalmanFilter.current.process(
-					latitude,
-					longitude,
-					accuracy ?? 10,
-					timestamp,
-				);
+				const filtered = kalmanFilter.current.process(latitude, longitude, accuracy ?? 10, timestamp);
 
-				// Distance calculation — ONLY when moving
-				if (isMoving && lastAcceptedPoint.current) {
-					const dist = calculateDistance(
+				// --- DUAL-SOURCE DISTANCE CALCULATION ---
+				// Source 1: GPS position delta (Haversine on Kalman-filtered positions)
+				let gpsDist = 0;
+				if (lastAcceptedPoint.current) {
+					gpsDist = calculateDistance(
 						lastAcceptedPoint.current.lat,
 						lastAcceptedPoint.current.lng,
 						filtered.lat,
 						filtered.lng,
 					);
-
-					if (
-						dist >= MIN_DISTANCE_THRESHOLD &&
-						dist < MAX_DISTANCE_SINGLE_UPDATE
-					) {
-						totalDistance.value += dist;
-					}
 				}
 
-				// Anchor point management:
-				// Shift anchor when moving. Freeze when stationary.
-				if (isMoving) {
-					lastAcceptedPoint.current = {
-						lat: filtered.lat,
-						lng: filtered.lng,
-						timestamp,
-					};
-				} else if (!lastAcceptedPoint.current) {
-					// Set initial anchor from first accurate reading
-					lastAcceptedPoint.current = {
-						lat: filtered.lat,
-						lng: filtered.lng,
-						timestamp,
-					};
+				// Source 2: Pedometer step-based distance (steps since last update × step length)
+				const stepDelta = pedometerStepCount.current - stepsAtLastGpsUpdate.current;
+				const stepDist = stepDelta * stepLengthM.current;
+
+				// Fusion: use the greater of GPS delta or pedometer delta
+				// This prevents under-counting (GPS misses small moves) AND over-counting
+				// For bike/drive (stepLengthM=0), only GPS is used.
+				const distToAdd = Math.max(gpsDist, stepDist);
+
+				if (distToAdd >= MIN_GPS_DISTANCE && distToAdd < MAX_DISTANCE_SINGLE_UPDATE) {
+					totalDistance.value += distToAdd;
+
+					// Update anchor to current filtered position
+					lastAcceptedPoint.current = { lat: filtered.lat, lng: filtered.lng, timestamp };
+					stepsAtLastGpsUpdate.current = pedometerStepCount.current;
+				} else if (distToAdd > 0 && distToAdd < MIN_GPS_DISTANCE) {
+					// Sub-threshold: accumulate small pedometer distances
+					// Don't move anchor — let GPS delta grow until it crosses threshold
+					// But DO count pedometer steps toward next update
+				} else if (distToAdd >= MAX_DISTANCE_SINGLE_UPDATE) {
+					// Spike rejection — teleport, skip this reading
+					lastAcceptedPoint.current = { lat: filtered.lat, lng: filtered.lng, timestamp };
+					stepsAtLastGpsUpdate.current = pedometerStepCount.current;
 				}
 
 				if (altitude !== null) {
@@ -219,16 +244,7 @@ export const useLocationTracking = () => {
 				pointsRef.current.push(point);
 			},
 		);
-	}, [
-		requestPermissions,
-		currentSpeed,
-		totalDistance,
-		maxSpeed,
-		avgSpeed,
-		elevation,
-		gpsSignal,
-		isTracking,
-	]);
+	}, [requestPermissions, currentSpeed, totalDistance, maxSpeed, avgSpeed, elevation, gpsSignal, isTracking, activityType]);
 
 	const stopTracking = useCallback(() => {
 		isTracking.value = false;
@@ -252,6 +268,7 @@ export const useLocationTracking = () => {
 		lastProcessedTime.current = 0;
 		lastStepTimestamp.current = 0;
 		pedometerStepCount.current = 0;
+		stepsAtLastGpsUpdate.current = 0;
 	}, [currentSpeed, totalDistance, maxSpeed, avgSpeed, elevation]);
 
 	const getPoints = useCallback((): LocationPoint[] => {

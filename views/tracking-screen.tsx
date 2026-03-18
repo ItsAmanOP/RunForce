@@ -40,7 +40,7 @@ const TrackingScreen = () => {
 		stopTracking,
 		resetTracking,
 		getPoints,
-	} = useLocationTracking();
+	} = useLocationTracking(activityType);
 	const {
 		elapsed,
 		isRunning,
@@ -117,8 +117,9 @@ const TrackingScreen = () => {
 	const gpsText = useDerivedValue(() => `GPS: ${gpsSignal.value}`);
 
 	const statusText = useDerivedValue((): string => {
-		if (currentSpeed.value > 0) return "On Track";
-		return "Waiting...";
+		if (currentSpeed.value > 0) return "Tracking";
+		if (gpsSignal.value === "NONE") return "Acquiring GPS...";
+		return "Ready";
 	});
 
 	const onPause = useCallback(() => {

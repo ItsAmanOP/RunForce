@@ -3,16 +3,14 @@ import { BRAND, Radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import {
-    useDerivedValue,
-    type SharedValue,
-} from "react-native-reanimated";
+import { useDerivedValue, type SharedValue } from "react-native-reanimated";
 
 // region Types
 interface MetricCardProps {
 	label: string;
 	value: SharedValue<string> | Readonly<SharedValue<string>>;
 	unit: string;
+	dynamicUnit?: SharedValue<string> | Readonly<SharedValue<string>>;
 	large?: boolean;
 }
 // endregion
@@ -22,11 +20,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 	label,
 	value,
 	unit,
+	dynamicUnit,
 	large = false,
 }) => {
 	const colors = useThemeColors();
 
 	const derivedValue = useDerivedValue(() => value.value);
+	const derivedUnit = useDerivedValue(() =>
+		dynamicUnit ? dynamicUnit.value : unit,
+	);
 
 	return (
 		<View
@@ -46,7 +48,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 					{ color: colors.text },
 				]}
 			/>
-			<Text style={styles.unit}>{unit}</Text>
+			{dynamicUnit ? (
+				<ReanimatedText text={derivedUnit} style={styles.unit} />
+			) : (
+				<Text style={styles.unit}>{unit}</Text>
+			)}
 		</View>
 	);
 };

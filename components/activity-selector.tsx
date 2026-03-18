@@ -20,6 +20,7 @@ interface ActivityOption {
 
 // region Data
 const ACTIVITIES: ActivityOption[] = [
+	{ type: "free", label: "Free", icon: "speedometer" },
 	{ type: "run", label: "Run", icon: "run" },
 	{ type: "walk", label: "Walk", icon: "walk" },
 	{ type: "bike", label: "Bike", icon: "bike" },

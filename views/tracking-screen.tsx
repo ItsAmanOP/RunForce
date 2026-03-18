@@ -222,7 +222,9 @@ const TrackingScreen = () => {
 								? "Walking Session"
 								: activityType === "bike"
 									? "Cycling Session"
-									: "Driving Session"}
+									: activityType === "drive"
+										? "Driving Session"
+										: "Free Session"}
 					</Text>
 				</View>
 				<View

@@ -1,5 +1,5 @@
 // region Types
-export type ActivityType = "run" | "walk" | "bike" | "drive";
+export type ActivityType = "free" | "run" | "walk" | "bike" | "drive";
 
 export interface LocationPoint {
 	latitude: number;

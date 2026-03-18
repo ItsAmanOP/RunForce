@@ -27,6 +27,7 @@ export const msToKmh = (ms: number): number => {
  * We use the conservative lower end to avoid inflating distance.
  */
 export const STEP_LENGTH_METERS: Record<string, number> = {
+	free: 0.7,
 	run: 0.82,
 	walk: 0.67,
 	bike: 0,

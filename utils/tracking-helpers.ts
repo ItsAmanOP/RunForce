@@ -19,7 +19,6 @@ export const calculateDistance = (
 	lat2: number,
 	lon2: number,
 ): number => {
-	"worklet";
 	const R = 6371000;
 	const dLat = ((lat2 - lat1) * Math.PI) / 180;
 	const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -41,4 +40,74 @@ export const getGpsSignalStrength = (accuracy: number | null): string => {
 	if (accuracy <= 50) return "WEAK";
 	return "NONE";
 };
+// endregion
+
+// region Kalman Filter
+/**
+ * GPS Kalman filter for smoothing latitude/longitude positions.
+ * Based on the industry-standard approach described in:
+ * https://stackoverflow.com/a/15657798
+ *
+ * The key insight: GPS positions have an "accuracy" (horizontal uncertainty in meters).
+ * The Kalman filter uses this accuracy to weight new measurements against the
+ * current estimate. High-accuracy readings shift the estimate more; low-accuracy
+ * readings shift it less.
+ *
+ * Q_metres_per_second controls how fast uncertainty grows over time.
+ * For walking: Q=3 works well. For running: Q=5. For driving: Q=10+.
+ */
+export class GpsKalmanFilter {
+	private lat = 0;
+	private lng = 0;
+	private variance = -1;
+	private timestampMs = 0;
+	private readonly qMetresPerSecond: number;
+	private static readonly MIN_ACCURACY = 1;
+
+	constructor(qMetresPerSecond = 3) {
+		this.qMetresPerSecond = qMetresPerSecond;
+	}
+
+	process(
+		latMeasurement: number,
+		lngMeasurement: number,
+		accuracy: number,
+		timestampMs: number,
+	): { lat: number; lng: number; accuracy: number } {
+		const acc = Math.max(accuracy, GpsKalmanFilter.MIN_ACCURACY);
+
+		if (this.variance < 0) {
+			this.timestampMs = timestampMs;
+			this.lat = latMeasurement;
+			this.lng = lngMeasurement;
+			this.variance = acc * acc;
+		} else {
+			const timeIncMs = timestampMs - this.timestampMs;
+
+			if (timeIncMs > 0) {
+				this.variance +=
+					(timeIncMs * this.qMetresPerSecond * this.qMetresPerSecond) / 1000;
+				this.timestampMs = timestampMs;
+			}
+
+			const K = this.variance / (this.variance + acc * acc);
+			this.lat += K * (latMeasurement - this.lat);
+			this.lng += K * (lngMeasurement - this.lng);
+			this.variance = (1 - K) * this.variance;
+		}
+
+		return {
+			lat: this.lat,
+			lng: this.lng,
+			accuracy: Math.sqrt(Math.abs(this.variance)),
+		};
+	}
+
+	reset(): void {
+		this.variance = -1;
+		this.lat = 0;
+		this.lng = 0;
+		this.timestampMs = 0;
+	}
+}
 // endregion

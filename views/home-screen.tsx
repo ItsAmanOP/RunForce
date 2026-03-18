@@ -4,15 +4,13 @@ import { MetricCard } from "@/components/metric-card";
 import { SmallMetricCard } from "@/components/small-metric-card";
 import { SpeedGauge } from "@/components/speed-gauge";
 import { BRAND, Radii, Shadows } from "@/constants/theme";
-import { formatTime, useStopwatch } from "@/hooks/use-stopwatch";
 import { useThemeColors } from "@/hooks/use-theme-colors";
-import { useLocationTracking } from "@/services/location-tracking";
 import type { ActivityType } from "@/types/activity";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useDerivedValue } from "react-native-reanimated";
+import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // region Component
@@ -22,15 +20,12 @@ const HomeScreen = () => {
 	const router = useRouter();
 	const [activityType, setActivityType] = useState<ActivityType>("run");
 
-	const { currentSpeed, totalDistance, elevation } = useLocationTracking();
-	const { elapsed } = useStopwatch();
+	const idleSpeed = useSharedValue(0);
 
-	const durationText = useDerivedValue(() => formatTime(elapsed.value));
-	const distanceText = useDerivedValue(() =>
-		(totalDistance.value / 1000).toFixed(1),
-	);
+	const durationText = useDerivedValue(() => "00:00:00");
+	const distanceText = useDerivedValue(() => "0.0");
 	const cadenceText = useDerivedValue(() => "--");
-	const elevationText = useDerivedValue(() => elevation.value.toLocaleString());
+	const elevationText = useDerivedValue(() => "--");
 
 	const onStartPress = useCallback(() => {
 		router.push({ pathname: "/tracking", params: { activityType } });
@@ -50,7 +45,7 @@ const HomeScreen = () => {
 				showsVerticalScrollIndicator={false}
 			>
 				<View style={styles.gaugeSection}>
-					<SpeedGauge speed={currentSpeed} />
+					<SpeedGauge speed={idleSpeed} />
 				</View>
 				<View style={styles.metricsSection}>
 					<View style={styles.metricsRow}>

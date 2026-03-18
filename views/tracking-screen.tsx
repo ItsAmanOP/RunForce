@@ -66,16 +66,25 @@ const TrackingScreen = () => {
 
 	useEffect(() => {
 		const init = async () => {
-			await activateKeepAwakeAsync();
-			await startTracking();
-			startTimer();
+			try {
+				await activateKeepAwakeAsync();
+				await startTracking();
+				startTimer();
+			} catch (error) {
+				console.warn("Failed to start tracking session:", error);
+				Alert.alert(
+					"Location Error",
+					"Could not start location tracking. Please ensure location permissions are granted and try again.",
+					[{ text: "Go Back", onPress: () => router.back() }],
+				);
+			}
 		};
 		init();
 		return () => {
 			deactivateKeepAwake();
 			stopTracking();
 		};
-	}, []);
+	}, [startTracking, startTimer, stopTracking, router]);
 
 	const pingStyle = useAnimatedStyle(() => ({ opacity: pingOpacity.value }));
 

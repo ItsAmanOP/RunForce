@@ -1,8 +1,8 @@
 import type { LocationPoint } from "@/types/activity";
 import {
-    calculateDistance,
-    getGpsSignalStrength,
-    msToKmh,
+	calculateDistance,
+	getGpsSignalStrength,
+	msToKmh,
 } from "@/utils/tracking-helpers";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef } from "react";
@@ -11,7 +11,7 @@ import { useSharedValue } from "react-native-reanimated";
 // region Constants
 const SPEED_SMOOTHING_FACTOR = 0.3;
 const MIN_ACCURACY_THRESHOLD = 50;
-const MIN_DISTANCE_THRESHOLD = 2;
+const MIN_DISTANCE_THRESHOLD = 1;
 // endregion
 
 // region Hook
@@ -33,12 +33,8 @@ export const useLocationTracking = () => {
 	const smoothedSpeed = useRef(0);
 
 	const requestPermissions = useCallback(async (): Promise<boolean> => {
-		const { status: foreground } =
-			await Location.requestForegroundPermissionsAsync();
-		if (foreground !== "granted") return false;
-		const { status: background } =
-			await Location.requestBackgroundPermissionsAsync();
-		return background === "granted" || foreground === "granted";
+		const { status } = await Location.requestForegroundPermissionsAsync();
+		return status === "granted";
 	}, []);
 
 	const startTracking = useCallback(async () => {
@@ -55,8 +51,8 @@ export const useLocationTracking = () => {
 		locationSubscription.current = await Location.watchPositionAsync(
 			{
 				accuracy: Location.Accuracy.BestForNavigation,
-				timeInterval: 1000,
-				distanceInterval: 1,
+				timeInterval: 500,
+				distanceInterval: 0,
 			},
 			(location) => {
 				const { latitude, longitude, altitude, speed, accuracy } =

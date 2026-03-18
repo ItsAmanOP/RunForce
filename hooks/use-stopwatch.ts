@@ -18,7 +18,7 @@ export const useStopwatch = () => {
 		intervalRef.current = setInterval(() => {
 			const now = Date.now();
 			elapsed.value = accumulatedRef.current + (now - startTimeRef.current);
-		}, 100);
+		}, 16);
 	}, [elapsed, isRunning]);
 
 	const pause = useCallback(() => {

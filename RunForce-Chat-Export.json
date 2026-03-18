@@ -1,0 +1,284 @@
+{
+  "version": 3,
+  "requesterUsername": "ItsAmanOG",
+  "requesterAvatarIconUri": {
+    "$mid": 1,
+    "path": "/u/237682841",
+    "scheme": "https",
+    "authority": "avatars.githubusercontent.com",
+    "query": "v=4"
+  },
+  "responderUsername": "GitHub Copilot",
+  "responderAvatarIconUri": {
+    "id": "copilot"
+  },
+  "initialLocation": "panel",
+  "requests": [
+    {
+      "requestId": "request_0",
+      "message": {
+        "text": "Act as a Principal Expert React Native Software Engineer and Architect RunForce Tracker app.\n\n# Context: \n\nThe main focus of the app:\n\n- Mainly we are creating this app for competitive runners, like people who are preparing for police running exams, or marathon runners, or athletes want to track there accurate speed and distance.\n\n- A fun user can just open the app and see his current speed sitting in a train or bus or inside a flight while offline.\n\n# Requirements:\n\n- This is a React Native app created using Expo framework.\n- The app should show real-time highly accurate speed and distance travelled and the app should be accessible offline and should be able to produce accurate data.\n- Consume sensors data and impelement the require functionalities with industry standard and modern best React Native coding practices and best performance practices.\n- The functionalities are similar to Adidas Running app, take refrence from it.\n- The app should be performant as native apps, and should produce constant 60fps performance.\n- The design provided is self explainatory and implement pixel perfect UI from the design (RunForce App Design Folder)\n\n# Tech:\n\n- Use perfect typescript for creating components and writing code.\n- Create generalized components in pure React Native and StyleSheet.\n- Use Reanimated for animations, and timers or realtime data should be written with Reanimated instead of using useState, because useSharedValue gives 60fps performance.\n- Use best library for consuming sensors in expo environment.\n- For Coding best practices in Expo, like file based routing, ts alias, component structure etc, follow: https://github.com/GSTJ/pegada/tree/main/apps/mobile It is a best open source project in React Native Expo.\n\nArchitect the RaceForce app as a Principal Expert React Native Software Engineer and implement all the functionalities with pixel perfect UI as provided.\n\nProperly run the project, also confirm everything is working fine after successfull running the project and nothing breaks.",
+        "parts": [
+          {
+            "range": {
+              "start": 0,
+              "endExclusive": 2024
+            },
+            "editorRange": {
+              "startLineNumber": 1,
+              "startColumn": 1,
+              "endLineNumber": 30,
+              "endColumn": 124
+            },
+            "text": "Act as a Principal Expert React Native Software Engineer and Architect RunForce Tracker app.\n\n# Context: \n\nThe main focus of the app:\n\n- Mainly we are creating this app for competitive runners, like people who are preparing for police running exams, or marathon runners, or athletes want to track there accurate speed and distance.\n\n- A fun user can just open the app and see his current speed sitting in a train or bus or inside a flight while offline.\n\n# Requirements:\n\n- This is a React Native app created using Expo framework.\n- The app should show real-time highly accurate speed and distance travelled and the app should be accessible offline and should be able to produce accurate data.\n- Consume sensors data and impelement the require functionalities with industry standard and modern best React Native coding practices and best performance practices.\n- The functionalities are similar to Adidas Running app, take refrence from it.\n- The app should be performant as native apps, and should produce constant 60fps performance.\n- The design provided is self explainatory and implement pixel perfect UI from the design (RunForce App Design Folder)\n\n# Tech:\n\n- Use perfect typescript for creating components and writing code.\n- Create generalized components in pure React Native and StyleSheet.\n- Use Reanimated for animations, and timers or realtime data should be written with Reanimated instead of using useState, because useSharedValue gives 60fps performance.\n- Use best library for consuming sensors in expo environment.\n- For Coding best practices in Expo, like file based routing, ts alias, component structure etc, follow: https://github.com/GSTJ/pegada/tree/main/apps/mobile It is a best open source project in React Native Expo.\n\nArchitect the RaceForce app as a Principal Expert React Native Software Engineer and implement all the functionalities with pixel perfect UI as provided.\n\nProperly run the project, also confirm everything is working fine after successfull running the project and nothing breaks.",
+            "kind": "text"
+          }
+        ]
+      },
+      "variableData": {
+        "variables": []
+      },
+      "response": [
+        {
+          "value": "*[Agent mode session \u2014 Copilot's text responses were not persisted to disk by VS Code. Only file edits were saved. See recovered-chat-session.md for full details including all file contents created.]*",
+          "supportThemeIcons": false,
+          "supportHtml": false,
+          "baseUri": {
+            "$mid": 1,
+            "path": "/Users/aman/Documents/Aman/RunForce/",
+            "scheme": "file"
+          }
+        }
+      ],
+      "responseId": "response_0",
+      "result": {
+        "timings": {
+          "firstProgress": 1000,
+          "totalElapsed": 60000
+        },
+        "metadata": {}
+      },
+      "responseMarkdownInfo": null,
+      "followups": [],
+      "isCanceled": false,
+      "agent": {
+        "extensionId": {
+          "value": "GitHub.copilot-chat",
+          "_lower": "github.copilot-chat"
+        },
+        "extensionVersion": "0.32.5",
+        "publisherDisplayName": "GitHub",
+        "extensionPublisherId": "GitHub",
+        "extensionDisplayName": "GitHub Copilot Chat",
+        "id": "github.copilot.editsAgent",
+        "description": "Edit files in your workspace in agent mode",
+        "when": "config.chat.agent.enabled",
+        "metadata": {
+          "themeIcon": {
+            "id": "tools"
+          },
+          "hasFollowups": false,
+          "supportIssueReporting": false
+        },
+        "name": "agent",
+        "fullName": "GitHub Copilot",
+        "isDefault": true,
+        "locations": [
+          "panel"
+        ],
+        "modes": [
+          "agent"
+        ],
+        "slashCommands": [
+          {
+            "name": "list"
+          }
+        ],
+        "disambiguation": []
+      },
+      "contentReferences": [],
+      "codeCitations": [],
+      "timestamp": 1773780810173,
+      "modelId": "copilot/claude-opus-4.6"
+    },
+    {
+      "requestId": "request_1",
+      "message": {
+        "text": "Add the project architecture in a github instruction so that the copilot keep reference in future.",
+        "parts": [
+          {
+            "range": {
+              "start": 0,
+              "endExclusive": 98
+            },
+            "editorRange": {
+              "startLineNumber": 1,
+              "startColumn": 1,
+              "endLineNumber": 1,
+              "endColumn": 99
+            },
+            "text": "Add the project architecture in a github instruction so that the copilot keep reference in future.",
+            "kind": "text"
+          }
+        ]
+      },
+      "variableData": {
+        "variables": []
+      },
+      "response": [
+        {
+          "value": "*[Agent mode session \u2014 Copilot's text responses were not persisted to disk by VS Code. Only file edits were saved. See recovered-chat-session.md for full details including all file contents created.]*",
+          "supportThemeIcons": false,
+          "supportHtml": false,
+          "baseUri": {
+            "$mid": 1,
+            "path": "/Users/aman/Documents/Aman/RunForce/",
+            "scheme": "file"
+          }
+        }
+      ],
+      "responseId": "response_1",
+      "result": {
+        "timings": {
+          "firstProgress": 1000,
+          "totalElapsed": 60000
+        },
+        "metadata": {}
+      },
+      "responseMarkdownInfo": null,
+      "followups": [],
+      "isCanceled": false,
+      "agent": {
+        "extensionId": {
+          "value": "GitHub.copilot-chat",
+          "_lower": "github.copilot-chat"
+        },
+        "extensionVersion": "0.32.5",
+        "publisherDisplayName": "GitHub",
+        "extensionPublisherId": "GitHub",
+        "extensionDisplayName": "GitHub Copilot Chat",
+        "id": "github.copilot.editsAgent",
+        "description": "Edit files in your workspace in agent mode",
+        "when": "config.chat.agent.enabled",
+        "metadata": {
+          "themeIcon": {
+            "id": "tools"
+          },
+          "hasFollowups": false,
+          "supportIssueReporting": false
+        },
+        "name": "agent",
+        "fullName": "GitHub Copilot",
+        "isDefault": true,
+        "locations": [
+          "panel"
+        ],
+        "modes": [
+          "agent"
+        ],
+        "slashCommands": [
+          {
+            "name": "list"
+          }
+        ],
+        "disambiguation": []
+      },
+      "contentReferences": [],
+      "codeCitations": [],
+      "timestamp": 1773784410173,
+      "modelId": "copilot/claude-opus-4.6"
+    },
+    {
+      "requestId": "request_2",
+      "message": {
+        "text": "The app is crashing on Pressing Start Button with the following error:\n\nTypeError: formatPace is not a function (it is Object)\nat trackingScreenTsx7: (:1:99)\nat reactNativeReanimated_useDerivedValueTs1 (:1:121)\n\nThoroughly check the issue, fix it properly.",
+        "parts": [
+          {
+            "range": {
+              "start": 0,
+              "endExclusive": 256
+            },
+            "editorRange": {
+              "startLineNumber": 1,
+              "startColumn": 1,
+              "endLineNumber": 7,
+              "endColumn": 45
+            },
+            "text": "The app is crashing on Pressing Start Button with the following error:\n\nTypeError: formatPace is not a function (it is Object)\nat trackingScreenTsx7: (:1:99)\nat reactNativeReanimated_useDerivedValueTs1 (:1:121)\n\nThoroughly check the issue, fix it properly.",
+            "kind": "text"
+          }
+        ]
+      },
+      "variableData": {
+        "variables": []
+      },
+      "response": [
+        {
+          "value": "*[Agent mode session \u2014 Copilot's text responses were not persisted to disk by VS Code. Only file edits were saved. See recovered-chat-session.md for full details including all file contents created.]*",
+          "supportThemeIcons": false,
+          "supportHtml": false,
+          "baseUri": {
+            "$mid": 1,
+            "path": "/Users/aman/Documents/Aman/RunForce/",
+            "scheme": "file"
+          }
+        }
+      ],
+      "responseId": "response_2",
+      "result": {
+        "timings": {
+          "firstProgress": 1000,
+          "totalElapsed": 60000
+        },
+        "metadata": {}
+      },
+      "responseMarkdownInfo": null,
+      "followups": [],
+      "isCanceled": false,
+      "agent": {
+        "extensionId": {
+          "value": "GitHub.copilot-chat",
+          "_lower": "github.copilot-chat"
+        },
+        "extensionVersion": "0.32.5",
+        "publisherDisplayName": "GitHub",
+        "extensionPublisherId": "GitHub",
+        "extensionDisplayName": "GitHub Copilot Chat",
+        "id": "github.copilot.editsAgent",
+        "description": "Edit files in your workspace in agent mode",
+        "when": "config.chat.agent.enabled",
+        "metadata": {
+          "themeIcon": {
+            "id": "tools"
+          },
+          "hasFollowups": false,
+          "supportIssueReporting": false
+        },
+        "name": "agent",
+        "fullName": "GitHub Copilot",
+        "isDefault": true,
+        "locations": [
+          "panel"
+        ],
+        "modes": [
+          "agent"
+        ],
+        "slashCommands": [
+          {
+            "name": "list"
+          }
+        ],
+        "disambiguation": []
+      },
+      "contentReferences": [],
+      "codeCitations": [],
+      "timestamp": 1773788010173,
+      "modelId": "copilot/claude-opus-4.6"
+    }
+  ],
+  "sessionId": "203b44e1-bdd7-470f-80c6-caacf3caf3c1",
+  "creationDate": 1773780810173,
+  "isImported": false,
+  "lastMessageDate": 1773830735000,
+  "customTitle": "[Recovered] RunForce App - Initial Architecture & Setup"
+}

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>RunForce | Speed Tracker 2026</title>
+<!-- Tailwind CSS CDN with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- BEGIN: Tailwind Configuration -->
+<script>
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                brand: '#80f20d',
+                cyber: {
+                  black: '#0a0a0a',
+                  dark: '#121212',
+                  gray: '#1c1c1c',
+                  light: '#2a2a2a'
+                }
+              },
+              fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+              },
+              borderRadius: {
+                'custom': '8px',
+              },
+              boxShadow: {
+                'neon': '0 0 15px rgba(128, 242, 13, 0.4)',
+                'neon-strong': '0 0 25px rgba(128, 242, 13, 0.6)',
+              }
+            }
+          }
+        }
+    </script>
+<!-- END: Tailwind Configuration -->
+<style data-purpose="custom-animations">
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 1; filter: drop-shadow(0 0 5px #80f20d); }
+          50% { opacity: 0.8; filter: drop-shadow(0 0 20px #80f20d); }
+        }
+        .animate-neon-pulse {
+          animation: pulse-glow 3s infinite ease-in-out;
+        }
+        .grid-bg {
+          background-image: linear-gradient(rgba(128, 242, 13, 0.05) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(128, 242, 13, 0.05) 1px, transparent 1px);
+          background-size: 20px 20px;
+        }
+        .scanline {
+          width: 100%;
+          height: 2px;
+          background: rgba(128, 242, 13, 0.1);
+          position: absolute;
+          top: 0;
+          left: 0;
+          animation: scan 8s linear infinite;
+          pointer-events: none;
+        }
+        @keyframes scan {
+          from { top: 0%; }
+          to { top: 100%; }
+        }
+        .gauge-container {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gauge-svg {
+            transform: rotate(-90deg);
+        }
+        .gauge-track {
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 12;
+            fill: none;
+        }
+        .gauge-progress {
+            stroke: #80f20d;
+            stroke-width: 12;
+            stroke-linecap: round;
+            fill: none;
+            stroke-dasharray: 565.48; /* 2 * PI * 90 */
+            stroke-dashoffset: 282.74; /* Example: 50% */
+            filter: drop-shadow(0 0 8px rgba(128, 242, 13, 0.8));
+            transition: stroke-dashoffset 1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-cyber-black text-white font-sans overflow-hidden h-screen flex flex-col">
+<!-- BEGIN: Header Navigation -->
+<header class="p-6 pb-2 flex justify-between items-center z-20" data-purpose="app-header">
+<div class="flex items-center gap-2"><div class="flex items-center gap-2.5">
+<div class="flex items-center justify-center w-8 h-8 rounded-lg bg-brand shadow-neon">
+<span class="material-symbols-outlined text-black font-black text-xl">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-black uppercase tracking-tighter text-white leading-none">RunForce</span>
+<span class="text-[8px] font-extrabold uppercase tracking-widest text-brand leading-none mt-0.5">System Live</span>
+</div>
+</div></div>
+<div class="flex gap-4">
+<button class="p-2 rounded-custom bg-cyber-dark border border-white/5">
+<svg class="h-5 w-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- END: Header Navigation -->
+<!-- BEGIN: Main Dashboard -->
+<main class="flex-1 relative flex flex-col items-center py-2 grid-bg overflow-y-auto" data-purpose="dashboard-container">
+<div class="scanline"></div>
+<!-- Redesigned Speedometer Gauge Section -->
+<section class="w-full flex flex-col items-center py-6 px-6" data-purpose="speedometer-gauge">
+<div class="gauge-container">
+<!-- Background Radial Glow -->
+<div class="absolute w-40 h-40 bg-brand/5 rounded-full blur-3xl"></div>
+<svg class="gauge-svg w-full h-full" viewbox="0 0 200 200">
+<!-- Track -->
+<circle class="gauge-track" cx="100" cy="100" r="90"></circle>
+<!-- Progress (e.g., 42.5 km/h out of 80 max) -->
+<circle class="gauge-progress" cx="100" cy="100" r="90" style="stroke-dashoffset: 260;"></circle>
+</svg>
+<!-- Central Labels -->
+<div class="absolute flex flex-col items-center text-center">
+<span class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/30 mb-0.5">Current</span>
+<span class="text-6xl font-black text-white tracking-tighter tabular-nums drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">42.5</span>
+<span class="text-xs font-black text-brand tracking-widest mt-1">KM/H</span>
+</div>
+<!-- Small tick marks for premium feel -->
+<div class="absolute inset-0 pointer-events-none opacity-20">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-white"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-white"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+</div>
+</div>
+</section>
+<!-- Grid Metrics Section -->
+<section class="w-full px-6 flex flex-col gap-4 py-2" data-purpose="primary-metrics">
+<div class="grid grid-cols-2 gap-4">
+<!-- Time Metric -->
+<div class="bg-cyber-dark/40 backdrop-blur-md border border-white/5 p-4 rounded-custom flex flex-col items-center">
+<span class="text-[10px] font-extrabold uppercase tracking-widest text-white/40 mb-2">Duration</span>
+<span class="text-2xl font-black text-white tabular-nums">00:45:12</span>
+<span class="text-[10px] text-brand mt-1 font-bold">HRS:MIN:SEC</span>
+</div>
+<!-- Distance Metric -->
+<div class="bg-cyber-dark/40 backdrop-blur-md border border-white/5 p-4 rounded-custom flex flex-col items-center">
+<span class="text-[10px] font-extrabold uppercase tracking-widest text-white/40 mb-2">Distance</span>
+<span class="text-2xl font-black text-white tabular-nums">12.8</span>
+<span class="text-[10px] text-brand mt-1 font-bold">KILOMETERS</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="bg-cyber-dark/60 backdrop-blur-md border border-white/5 p-3 rounded-custom flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-[9px] uppercase font-bold text-white/40">Cadence</span>
+<span class="text-lg font-bold text-white">92</span>
+</div>
+<span class="text-[9px] font-bold text-brand uppercase">RPM</span>
+</div>
+<div class="bg-cyber-dark/60 backdrop-blur-md border border-white/5 p-3 rounded-custom flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-[9px] uppercase font-bold text-white/40">Elevation</span>
+<span class="text-lg font-bold text-white">1,240</span>
+</div>
+<span class="text-[9px] font-bold text-brand uppercase">M</span>
+</div>
+</div>
+</section>
+<!-- Pace Trend Graph -->
+<section class="w-full px-6 mb-40" data-purpose="trend-graph">
+<div class="bg-cyber-dark/40 p-4 rounded-custom border border-white/5">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="material-symbols-outlined text-[14px] text-brand">bolt</span>
+<span class="text-[9px] font-black uppercase tracking-widest text-brand/80">RunForce Analytics</span>
+</div><h3 class="text-[10px] font-bold uppercase tracking-wider text-white/60">RunForce Records (Last 5km)</h3>
+<span class="text-xs text-brand font-mono">+4.2%</span>
+</div>
+<div class="h-20 w-full relative">
+<canvas class="w-full h-full" id="trendCanvas"></canvas>
+</div>
+</div>
+</section>
+</main>
+<!-- END: Main Dashboard -->
+<!-- BEGIN: Action Controls & Activity Selection -->
+<footer class="fixed bottom-0 left-0 w-full p-6 pb-10 bg-gradient-to-t from-cyber-black via-cyber-black/90 to-transparent pt-10 z-30" data-purpose="action-controls">
+<!-- Activity Selection -->
+<div class="flex justify-center gap-3 mb-6 overflow-x-auto no-scrollbar py-2" data-purpose="activity-selection">
+<button class="flex flex-col items-center gap-1 min-w-[60px] opacity-100">
+<div class="w-12 h-12 rounded-full bg-brand flex items-center justify-center text-black shadow-neon">
+<span class="material-symbols-outlined text-xl">directions_run</span>
+</div>
+<span class="text-[9px] font-black uppercase text-brand">Run</span>
+</button>
+<button class="flex flex-col items-center gap-1 min-w-[60px] opacity-40 grayscale">
+<div class="w-12 h-12 rounded-full bg-cyber-dark border border-white/20 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">directions_walk</span>
+</div>
+<span class="text-[9px] font-black uppercase">Walk</span>
+</button>
+<button class="flex flex-col items-center gap-1 min-w-[60px] opacity-40 grayscale">
+<div class="w-12 h-12 rounded-full bg-cyber-dark border border-white/20 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">directions_bike</span>
+</div>
+<span class="text-[9px] font-black uppercase">Bike</span>
+</button>
+<button class="flex flex-col items-center gap-1 min-w-[60px] opacity-40 grayscale">
+<div class="w-12 h-12 rounded-full bg-cyber-dark border border-white/20 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">directions_car</span>
+</div>
+<span class="text-[9px] font-black uppercase">Drive</span>
+</button>
+</div>
+<div class="flex justify-between items-center">
+<!-- Secondary Action: Location -->
+<button class="w-14 h-14 bg-cyber-dark border border-white/10 rounded-custom flex items-center justify-center backdrop-blur-xl">
+<svg class="h-6 w-6 text-white/60" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Primary Floating Action Button (FAB) -->
+<button class="group relative w-24 h-24 flex items-center justify-center outline-none">
+<div class="absolute inset-0 bg-brand rounded-full opacity-20 blur-xl animate-pulse group-active:scale-95 transition-transform"></div>
+<div class="relative w-20 h-20 bg-brand rounded-full flex flex-col items-center justify-center shadow-neon-strong group-active:scale-90 transition-transform">
+<svg class="h-8 w-8 text-black fill-current mb-0.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M8 5v14l11-7z"></path>
+</svg>
+<span class="text-[10px] font-black text-black uppercase tracking-tighter">Start</span>
+</div>
+</button>
+<!-- Profile/History Action -->
+<button class="w-14 h-14 bg-cyber-dark border border-white/10 rounded-custom flex items-center justify-center backdrop-blur-xl">
+<svg class="h-6 w-6 text-white/60" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</footer>
+<!-- END: Action Controls -->
+<!-- BEGIN: Canvas Graphing Logic -->
+<script data-purpose="canvas-renderer">
+    function drawTrend() {
+      const canvas = document.getElementById('trendCanvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const points = [
+        {x: 0, y: 60},
+        {x: 40, y: 50},
+        {x: 80, y: 70},
+        {x: 120, y: 40},
+        {x: 160, y: 55},
+        {x: 200, y: 30},
+        {x: 240, y: 45},
+        {x: 280, y: 20},
+        {x: 340, y: 10}
+      ];
+
+      const scaleX = rect.width / 340;
+
+      ctx.beginPath();
+      ctx.moveTo(points[0].x * scaleX, points[0].y);
+      
+      for (let i = 0; i < points.length - 1; i++) {
+        const xc = (points[i].x * scaleX + points[i + 1].x * scaleX) / 2;
+        const yc = (points[i].y + points[i + 1].y) / 2;
+        ctx.quadraticCurveTo(points[i].x * scaleX, points[i].y, xc, yc);
+      }
+
+      ctx.strokeStyle = '#80f20d';
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#80f20d';
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.lineTo(rect.width, rect.height);
+      ctx.lineTo(0, rect.height);
+      ctx.closePath();
+      
+      const gradient = ctx.createLinearGradient(0, 0, 0, rect.height);
+      gradient.addColorStop(0, 'rgba(128, 242, 13, 0.2)');
+      gradient.addColorStop(1, 'rgba(128, 242, 13, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+
+    window.addEventListener('load', drawTrend);
+    window.addEventListener('resize', drawTrend);
+</script>
+<!-- END: Canvas Graphing Logic -->
+</body></html>
